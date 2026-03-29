@@ -115,6 +115,11 @@ const Icons = {
       <circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m11.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
     </svg>
   ),
+  Settings: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  ),
 };
 
 const CATEGORY_LABELS = { career: "Career", certification: "資格", skill: "Skill" };
@@ -1359,7 +1364,63 @@ const TABS = [
   { key: "skills", label: "Skills", Icon: Icons.Skills },
   { key: "checkin", label: "Check-in", Icon: Icons.Checkin },
   { key: "journal", label: "Journal", Icon: Icons.Journal },
+  { key: "settings", label: "Settings", Icon: Icons.Settings },
 ];
+
+const GOAL_STORAGE_KEY = "goal-manager-data";
+
+const SettingsTab = () => {
+  const btn = {
+    width: "100%", padding: "14px", borderRadius: 12, border: "none",
+    fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+  };
+  const backup = () => {
+    const d = localStorage.getItem(GOAL_STORAGE_KEY);
+    const blob = new Blob([d || "{}"], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `goal-manager_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const restore = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (!confirm("現在のデータを上書きしますか？")) return;
+        try {
+          JSON.parse(ev.target.result);
+          localStorage.setItem(GOAL_STORAGE_KEY, ev.target.result);
+          location.reload();
+        } catch {
+          alert("ファイルが無効です。");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+  return (
+    <div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: "#1d1d1f", marginBottom: 20 }}>Settings</div>
+      <div style={{ background: "#f5f5f7", borderRadius: 16, padding: "20px" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#86868b", letterSpacing: 1, textTransform: "uppercase", marginBottom: 14 }}>データ管理</div>
+        <button onClick={backup} style={{ ...btn, background: "#1d1d1f", color: "#fff", marginBottom: 10 }}>
+          データをバックアップ
+        </button>
+        <button onClick={restore} style={{ ...btn, background: "#fff", color: "#1d1d1f" }}>
+          データを復元
+        </button>
+      </div>
+    </div>
+  );
+};
 
 function GoalManager() {
   const [tab, setTab] = useState("goals");
@@ -1443,6 +1504,7 @@ function GoalManager() {
         {tab === "skills" && <SkillsTab data={data} setData={updateData} />}
         {tab === "checkin" && <CheckinTab data={data} setData={updateData} />}
         {tab === "journal" && <JournalTab data={data} setData={updateData} />}
+        {tab === "settings" && <SettingsTab />}
       </div>
 
       {/* Tab Bar */}
