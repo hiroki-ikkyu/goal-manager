@@ -1377,6 +1377,27 @@ function GoalManager() {
     setData(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
       save(next);
+      if (typeof SharedStore !== 'undefined') {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const activeGoals = next.goals.length;
+        const checkedInToday = next.checkins.some(c => c.date === todayStr);
+        const overallProgress = activeGoals
+          ? Math.round(next.goals.reduce((s, g) => s + g.progress, 0) / activeGoals)
+          : 0;
+        const allMs = next.goals.flatMap(g => g.milestones.map(m => ({ ...m, goalTitle: g.title })));
+        const upcoming = allMs.filter(m => !m.done && m.target).sort((a, b) => a.target.localeCompare(b.target));
+        const nm = upcoming[0];
+        SharedStore._utils.safeSet('shared:goals:summary', {
+          activeGoals,
+          checkedInToday,
+          overallProgress,
+          nextMilestone: nm ? {
+            name: nm.text,
+            daysLeft: Math.ceil((new Date(nm.target) - new Date()) / 86400000)
+          } : null,
+          updatedAt: new Date().toISOString()
+        });
+      }
       return next;
     });
   }, []);
